@@ -1,0 +1,60 @@
+{
+  "name": "agy-discord-mcp",
+  "version": "0.1.0",
+  "description": "Discord bot bridge and MCP tools for the agy (Antigravity) CLI.",
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "agy-mcp-config.example.json",
+    ".env.example"
+  ],
+  "bin": {
+    "agy-discord-mcp": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev:mcp": "tsx src/cli.ts mcp",
+    "dev:bot": "tsx src/cli.ts bot",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Openclaw-Metis/agy-discord-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Openclaw-Metis/agy-discord-mcp/issues"
+  },
+  "homepage": "https://github.com/Openclaw-Metis/agy-discord-mcp#readme",
+  "keywords": [
+    "agy",
+    "antigravity",
+    "antigravity-cli",
+    "gemini",
+    "discord",
+    "mcp",
+    "model-context-protocol",
+    "discord-bot"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.22.0",
+    "cross-spawn": "^7.0.6",
+    "discord.js": "^14.18.0"
+  },
+  "devDependencies": {
+    "@emnapi/core": "^1.11.1",
+    "@emnapi/runtime": "^1.11.1",
+    "@types/cross-spawn": "^6.0.6",
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.8.0",
+    "vitest": "^4.1.9"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}
