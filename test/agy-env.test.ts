@@ -29,15 +29,16 @@ describe('buildAgyChildEnv', () => {
 })
 
 describe('buildAgyPrintArgs', () => {
-  const base = { sandbox: false, workdir: '/work', extraArgs: [], timeoutMs: 900_000 }
+  const base = { sandbox: false, workdir: '/work', extraArgs: [], timeoutMs: 900_000, imagesDir: '/imgs' }
 
-  it('passes the prompt as the value of --print, last, and adds the workdir', () => {
+  it('passes the prompt as the value of --print, last, and adds workdir + images dir', () => {
     const args = buildAgyPrintArgs(base, 'hello world', undefined)
     expect(args[args.length - 2]).toBe('--print')
     expect(args[args.length - 1]).toBe('hello world')
     const di = args.indexOf('--add-dir')
     expect(di).toBeGreaterThanOrEqual(0)
     expect(args[di + 1]).toBe('/work')
+    expect(args).toContain('/imgs')
     expect(args).not.toContain('--conversation')
     expect(args).not.toContain('--sandbox')
   })
