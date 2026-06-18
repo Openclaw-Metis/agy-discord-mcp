@@ -32,16 +32,6 @@ jobs:
             exit 1
           fi
 
-      - name: Verify npm token
-        shell: bash
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          if [ -z "$NODE_AUTH_TOKEN" ]; then
-            echo "::error::Set NPM_TOKEN to an npm granular access token with read/write access and bypass 2FA enabled."
-            exit 1
-          fi
-
       - name: Select npm dist-tag
         id: dist_tag
         shell: bash
@@ -58,6 +48,4 @@ jobs:
       - run: npm run build
 
       - name: Publish to npm
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --provenance --tag "${{ steps.dist_tag.outputs.npm_tag }}"
