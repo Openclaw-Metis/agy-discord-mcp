@@ -16,9 +16,22 @@ It is a sibling of `codex-discord-mcp`, ported to agy. Because `agy --print` wri
 ## Install
 
 ```bash
-npm install
+npm install -g agy-discord-mcp
+agy-discord-mcp doctor
+```
+
+Or run it without a global install:
+
+```bash
+npx agy-discord-mcp@latest doctor
+```
+
+For local development from this repository:
+
+```bash
+npm ci
 npm run build
-npm link        # optional: exposes the `agy-discord-mcp` command globally
+npm link
 ```
 
 ## Configure
