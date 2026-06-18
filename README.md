@@ -137,6 +137,16 @@ npm run dev:bot   # tsx src/cli.ts bot
 npm run dev:mcp   # tsx src/cli.ts mcp
 ```
 
+## Publishing
+
+GitHub Releases publish to npm through `.github/workflows/release.yml`.
+
+1. Set the repository secret `NPM_TOKEN` to an npm token that can publish `agy-discord-mcp`.
+2. Bump `package.json` and `package-lock.json` to the release version and commit the change.
+3. Create a GitHub Release whose tag is `v` plus the package version, for example `v0.1.0`.
+
+The release workflow checks that the tag matches `package.json`, runs typecheck, tests, and build, then publishes to npm with provenance. Normal releases use the npm `latest` dist-tag; GitHub pre-releases use `next`.
+
 ## License
 
 MIT
