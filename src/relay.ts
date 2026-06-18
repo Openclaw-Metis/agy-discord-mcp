@@ -84,6 +84,7 @@ async function processMessage(
       chatId: message.chatId,
       text: result.text,
       replyTo: message.messageId,
+      files: result.imagePaths.length > 0 ? result.imagePaths : undefined,
     })
     await markMessageHandled(message.id, paths)
   } catch (err) {

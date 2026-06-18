@@ -60,9 +60,13 @@ agy-discord-mcp bot
 
 Each allowed message becomes `agy --print "<prompt>"` run in `AGY_WORKDIR`, and the trimmed stdout is posted back. Set `AGY_RESUME_BY_CHANNEL=true` to keep a per-channel agy conversation (resumed via `--conversation <id>`, detected from agy's conversations directory).
 
+**Images work in relay mode too.** The relay adds the generated-images dir (default `~/agy_images`) to agy's workspace and tells agy to save any user-facing image there; any image agy writes during the turn is detected and attached to the Discord reply automatically. This needs no MCP server — it is the recommended way to get images out of agy.
+
 > agy is launched through its wrapper, which auto-injects `--dangerously-skip-permissions` — **every tool call is auto-approved**. Treat Discord input as untrusted: run in an isolated workspace, set `AGY_SANDBOX=1`, or acknowledge the risk with `AGY_DISCORD_ASSUME_YES=true`.
 
 ## `mcp` mode (agy drives Discord)
+
+> **Caveat (current agy):** registering an MCP server in agy's settings makes a **headless** `agy --print` hang on a first-use, interactive "trust this MCP server?" prompt — there is no config key (the `mcpServers` schema has no `trust` field) or `agy mcp` subcommand to pre-approve it. Since that global setting is read by *every* agy invocation, it also breaks the relay's own `agy --print` calls and any other headless agy users. Enable this only for a dedicated **interactive** agy session that can answer the prompt; for normal use prefer relay mode above, which already attaches images.
 
 Register the MCP server by merging a `mcpServers` block into `~/.gemini/settings.json` (or `~/.gemini/antigravity-cli/settings.json`). Generate it with:
 
