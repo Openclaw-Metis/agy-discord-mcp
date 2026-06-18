@@ -141,9 +141,11 @@ npm run dev:mcp   # tsx src/cli.ts mcp
 
 GitHub Releases publish to npm through `.github/workflows/release.yml`.
 
-1. Set the repository secret `NPM_TOKEN` to an npm token that can publish `agy-discord-mcp`.
+1. Set the repository secret `NPM_TOKEN` to an npm granular access token that can publish `agy-discord-mcp`.
 2. Bump `package.json` and `package-lock.json` to the release version and commit the change.
 3. Create a GitHub Release whose tag is `v` plus the package version, for example `v0.1.0`.
+
+The token must have read/write package access and **Bypass two-factor authentication** enabled. A normal npm login token fails in GitHub Actions when the account requires 2FA.
 
 The release workflow checks that the tag matches `package.json`, runs typecheck, tests, and build, then publishes to npm with provenance. Normal releases use the npm `latest` dist-tag; GitHub pre-releases use `next`.
 

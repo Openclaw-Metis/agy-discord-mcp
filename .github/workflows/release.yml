@@ -18,9 +18,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           registry-url: https://registry.npmjs.org
-          cache: npm
 
       - name: Verify release tag
         shell: bash
@@ -39,7 +38,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           if [ -z "$NODE_AUTH_TOKEN" ]; then
-            echo "::error::Set the repository secret NPM_TOKEN before publishing to npm."
+            echo "::error::Set NPM_TOKEN to an npm granular access token with read/write access and bypass 2FA enabled."
             exit 1
           fi
 
