@@ -24,6 +24,14 @@ export function generatedImagesDir(env: NodeJS.ProcessEnv = process.env): string
   return join(homedir(), 'agy_images')
 }
 
+// One deliverables subdirectory per Discord channel, so concurrent runs in
+// different channels (or other agy jobs writing to the base dir) cannot get
+// attached to the wrong reply. chatId is a snowflake, but sanitize anyway
+// since it lands in a filesystem path.
+export function channelOutboxDir(baseDir: string, chatId: string): string {
+  return join(baseDir, chatId.replace(/[^0-9A-Za-z_-]/g, '_'))
+}
+
 // Recursively list files under `dir` whose lowercase extension is in
 // `extensions` (no leading dot), newest first, capped at `limit`.
 export function listRecentFiles(

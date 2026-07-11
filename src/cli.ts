@@ -338,6 +338,10 @@ export function collectDoctorReport(): DoctorReport {
       ok: true,
       value: agyOptions.sandbox ? 'on' : 'off',
     },
+    deliverablesDir: {
+      ok: true,
+      path: agyOptions.imagesDir,
+    },
   }
 
   return {
@@ -377,14 +381,14 @@ function printHelp(): void {
   process.stdout.write(`agy-discord-mcp
 
 Commands:
-  mcp                       Run the Discord MCP server over stdio
-  bot                       Run Discord -> agy --print relay mode
-  init                       Interactive first-run setup
-  configure [token]          Store DISCORD_BOT_TOKEN in the state .env file
-  access <command>           Manage local allowlist and pairing
-  invite-url <client-id>     Print a Discord bot invite URL
-  print-config [--npx]       Print an agy mcpServers JSON config snippet
-  doctor [--json]            Show basic local configuration status
+  mcp                     Run the Discord MCP server over stdio
+  bot                     Run Discord -> agy --print relay mode
+  init                    Interactive first-run setup
+  configure [token]       Store DISCORD_BOT_TOKEN in the state .env file
+  access <command>        Manage local allowlist and pairing
+  invite-url <client-id>  Print a Discord bot invite URL
+  print-config [--npx]    Print an agy mcpServers JSON config snippet
+  doctor [--json]         Show basic local configuration status
 
 Run "agy-discord-mcp access help" for access commands.
 `)

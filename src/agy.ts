@@ -1,8 +1,8 @@
-import { readdirSync, statSync } from 'node:fs'
+import { mkdirSync, readdirSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { basename, join } from 'node:path'
 import spawn from 'cross-spawn'
-import { generatedImagesDir, listRecentFiles } from './images.js'
+import { channelOutboxDir, generatedImagesDir, listRecentFiles } from './images.js'
 import { loadThreads, removeThread, saveThread } from './state.js'
 import type { QueuedMessage, StatePaths } from './types.js'
 
@@ -82,7 +82,15 @@ export class AgyRunner {
   async runForMessage(message: QueuedMessage): Promise<AgyRunResult> {
     const threads = loadThreads(this.paths)
     const conversationId = this.options.resumeByChannel ? threads[message.chatId] : undefined
-    const prompt = buildDiscordPrompt(message, this.options.imagesDir)
+    // Per-channel deliverables dir: concurrent runs in other channels (or any
+    // other agy job writing to the shared base dir) can't leak into this reply.
+    const outboxDir = channelOutboxDir(this.options.imagesDir, message.chatId)
+    try {
+      mkdirSync(outboxDir, { recursive: true, mode: 0o700 })
+    } catch {
+      // non-fatal: the scan tolerates a missing directory
+    }
+    const prompt = buildDiscordPrompt(message, outboxDir)
     const args = buildAgyPrintArgs(this.options, prompt, conversationId)
 
     // Snapshot the conversations dir so we can map this run to the conversation
@@ -110,7 +118,7 @@ export class AgyRunner {
     return {
       text,
       conversationId: resultConversationId,
-      filePaths: detectNewFiles(this.options.imagesDir, runStart),
+      filePaths: detectRunDeliverables(outboxDir, runStart),
     }
   }
 
@@ -144,7 +152,7 @@ export function buildAgyPrintArgs(
   return args
 }
 
-export function buildDiscordPrompt(message: QueuedMessage, imagesDir?: string): string {
+export function buildDiscordPrompt(message: QueuedMessage, outboxDir?: string): string {
   const attachmentLines =
     message.attachments.length === 0
       ? 'none'
@@ -157,8 +165,8 @@ export function buildDiscordPrompt(message: QueuedMessage, imagesDir?: string): 
           )
           .join('\n')
 
-  const fileLine = imagesDir
-    ? `If you produce any file for the user (an image, or a document such as md/html/pdf/csv/json/zip/docx, etc.), save it into ${imagesDir} — any such file you save there during this turn is automatically attached to your Discord reply.`
+  const fileLine = outboxDir
+    ? `If you produce any file for the user (an image, or a document such as md/html/pdf/csv/json/zip/docx, etc.), save it into ${outboxDir} — any such file you save there during this turn is automatically attached to your Discord reply.`
     : undefined
 
   return [
@@ -197,6 +205,7 @@ async function runAgyProcess(
     let stdout = ''
     let stderr = ''
     let settled = false
+    let killTimer: NodeJS.Timeout | undefined
 
     // agy bounds itself with --print-timeout; give it a grace window before we
     // hard-kill, so its own (cleaner) timeout fires first.
@@ -204,6 +213,14 @@ async function runAgyProcess(
       if (settled) return
       settled = true
       child.kill('SIGTERM')
+      // A deadlocked agy --print that ignores SIGTERM would otherwise block the
+      // channel's serial queue forever (the classic stuck-bot failure mode).
+      killTimer = setTimeout(() => {
+        try {
+          child.kill('SIGKILL')
+        } catch {}
+      }, 2000)
+      killTimer.unref()
       reject(new Error(`agy timed out after ${options.timeoutMs}ms`))
     }, options.timeoutMs + 30_000)
 
@@ -234,13 +251,15 @@ async function runAgyProcess(
       reject(err)
     })
 
-    child.on('close', code => {
+    child.on('close', (code, signal) => {
+      if (killTimer) clearTimeout(killTimer)
       if (settled) return
       settled = true
       clearTimeout(timer)
 
       if (code !== 0) {
-        reject(new Error(`agy exited with code ${code}: ${(stderr || stdout).trim()}`.trim()))
+        const cause = signal ? `signal ${signal}` : `code ${code}`
+        reject(new Error(`agy exited with ${cause}: ${(stderr || stdout).trim()}`.trim()))
         return
       }
 
@@ -289,12 +308,17 @@ function detectConversationId(
   return best ? basename(best.name, '.db') : undefined
 }
 
-// Deliverable files in the output dir written (by mtime) during this run. agy is
-// told in the prompt to save user-facing files there; the relay attaches what it
-// finds. Skips oversized files and caps the count so a run can't attach a huge batch.
-function detectNewFiles(dir: string, sinceMs: number): string[] {
+// Deliverable files in the run's outbox written (by mtime) during this run.
+// agy is told in the prompt to save user-facing files there; the relay attaches
+// what it finds, oldest first so multi-file outputs keep their natural order.
+// Skips empty/oversized files and caps the count at Discord's per-message limit.
+export function detectRunDeliverables(dir: string, sinceMs: number): string[] {
   return listRecentFiles(dir, DELIVERABLE_EXTENSIONS, { limit: 30 })
-    .filter(file => file.modifiedMs >= sinceMs - 1000 && file.size <= MAX_ATTACHMENT_BYTES)
+    .filter(
+      file =>
+        file.modifiedMs >= sinceMs && file.size > 0 && file.size <= MAX_ATTACHMENT_BYTES,
+    )
+    .sort((a, b) => a.modifiedMs - b.modifiedMs)
     .map(file => file.path)
     .slice(0, 10)
 }

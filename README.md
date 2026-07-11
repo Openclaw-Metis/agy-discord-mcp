@@ -73,7 +73,7 @@ agy-discord-mcp bot
 
 Each allowed message becomes `agy --print "<prompt>"` run in `AGY_WORKDIR`, and the trimmed stdout is posted back. Set `AGY_RESUME_BY_CHANNEL=true` to keep a per-channel agy conversation (resumed via `--conversation <id>`, detected from agy's conversations directory).
 
-**Files come back in relay mode too** — not just images. The relay adds the output dir (default `~/agy_images`, set by `AGY_DISCORD_GENERATED_IMAGES_DIR`) to agy's workspace and tells agy to save any user-facing file there; any deliverable agy writes during the turn — images plus common document/data/archive types (md, html, pdf, csv, json, zip, docx, …; code/temp files are ignored) — is detected and attached to the Discord reply automatically (≤25 MB each, up to 10). This needs no MCP server. If other agy workloads also write to `~/agy_images` (e.g. image-gen crons), point the bot at a dedicated dir via `AGY_DISCORD_GENERATED_IMAGES_DIR` so their output isn't picked up.
+**Files come back in relay mode too** — not just images. The relay adds the output dir (default `~/agy_images`, set by `AGY_DISCORD_GENERATED_IMAGES_DIR`) to agy's workspace and tells agy to save any user-facing file into a **per-channel subdirectory** of it (`<output-dir>/<channel-id>/`); any deliverable agy writes there during the turn — images plus common document/data/archive types (md, html, pdf, csv, json, zip, docx, …; code/temp files are ignored) — is detected and attached to the Discord reply automatically (≤25 MB each, up to 10). This needs no MCP server. The per-channel subdirectory means concurrent runs in different channels — or other agy workloads writing to the base dir (e.g. image-gen crons) — cannot get attached to the wrong reply.
 
 > agy is launched through its wrapper, which auto-injects `--dangerously-skip-permissions` — **every tool call is auto-approved**. Treat Discord input as untrusted: run in an isolated workspace, set `AGY_SANDBOX=1`, or acknowledge the risk with `AGY_DISCORD_ASSUME_YES=true`.
 
@@ -137,7 +137,7 @@ agy writes generated images as **real files** (its native `generate_image` tool,
 | `AGY_EXTRA_ARGS` | — | extra agy args (shell-style string or JSON array) |
 | `AGY_CONVERSATIONS_DIR` | `~/.gemini/antigravity-cli/conversations` | where agy stores conversation `.db` files |
 | `AGY_DISCORD_ATTACHMENT_ROOTS` | cwd + `AGY_WORKDIR` + inbox | allowed upload roots (os-delimiter separated) |
-| `AGY_DISCORD_GENERATED_IMAGES_DIR` | `~/agy_images` | output dir the relay tells agy to save deliverables in and scans to auto-attach (always attachable) |
+| `AGY_DISCORD_GENERATED_IMAGES_DIR` | `~/agy_images` | base output dir for relay deliverables; each channel uses `<dir>/<channel-id>/`, told to agy per turn and scanned to auto-attach (always attachable) |
 | `AGY_DISCORD_ASSUME_YES` | `false` | suppress the unsafe-mode warning |
 
 ## Development
