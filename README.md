@@ -75,7 +75,28 @@ Each allowed message becomes `agy --print "<prompt>"` run in `AGY_WORKDIR`, and 
 
 **Files come back in relay mode too** — not just images. The relay adds the output dir (default `~/agy_images`, set by `AGY_DISCORD_GENERATED_IMAGES_DIR`) to agy's workspace and tells agy to save any user-facing file into a **per-channel subdirectory** of it (`<output-dir>/<channel-id>/`); any deliverable agy writes there during the turn — images plus common document/data/archive types (md, html, pdf, csv, json, zip, docx, …; code/temp files are ignored) — is detected and attached to the Discord reply automatically (≤25 MB each, up to 10). This needs no MCP server. The per-channel subdirectory means concurrent runs in different channels — or other agy workloads writing to the base dir (e.g. image-gen crons) — cannot get attached to the wrong reply.
 
+**Files the user attaches** to a Discord message are downloaded into the bridge inbox before the run (`AGY_DISCORD_RELAY_DOWNLOAD_ATTACHMENTS=false` disables this); the inbox is added to agy's workspace and the prompt lists each file's local path. Inbox files older than 7 days are pruned.
+
 > agy is launched through its wrapper, which auto-injects `--dangerously-skip-permissions` — **every tool call is auto-approved**. Treat Discord input as untrusted: run in an isolated workspace, set `AGY_SANDBOX=1`, or acknowledge the risk with `AGY_DISCORD_ASSUME_YES=true`.
+
+### Relay commands
+
+Send one of these as the whole message (in mention-gated channels, `@bot !status` works too). They are answered immediately, even while a long run is busy:
+
+| command | effect |
+|---|---|
+| `!status` | what is running, for how long, how many messages are queued, and which conversation the channel resumes |
+| `!stop` | cancel the running agy task (SIGTERM, then SIGKILL) and drop queued messages — the fix for a stuck run |
+| `!new` | forget the channel's resumed conversation so the next message starts fresh (`AGY_RESUME_BY_CHANNEL=true`) |
+| `!help` | list the commands |
+
+`/status`, `/stop`, `/new`, `/help`, and the aliases `!cancel` / `!reset` work the same way. Runs in one channel are serial; a message that arrives while a run is busy gets a ⏳ reaction until its turn starts.
+
+### Restarts
+
+On shutdown the relay cancels in-flight agy runs instead of orphaning them and leaves those messages pending. On the next start, pending messages received within `AGY_DISCORD_REPLAY_MAX_AGE_MS` (default one hour) are replayed; older ones are marked handled and skipped, so a crash never re-runs a stale request hours later.
+
+While a relay is running, `mcp` mode servers sharing the same state directory leave inbound handling to the relay: they keep serving outbound tools but stop duplicating typing indicators, ack reactions, pairing replies, and queue writes.
 
 ## `mcp` mode (agy drives Discord)
 
@@ -138,6 +159,8 @@ agy writes generated images as **real files** (its native `generate_image` tool,
 | `AGY_CONVERSATIONS_DIR` | `~/.gemini/antigravity-cli/conversations` | where agy stores conversation `.db` files |
 | `AGY_DISCORD_ATTACHMENT_ROOTS` | cwd + `AGY_WORKDIR` + inbox | allowed upload roots (os-delimiter separated) |
 | `AGY_DISCORD_GENERATED_IMAGES_DIR` | `~/agy_images` | base output dir for relay deliverables; each channel uses `<dir>/<channel-id>/`, told to agy per turn and scanned to auto-attach (always attachable) |
+| `AGY_DISCORD_RELAY_DOWNLOAD_ATTACHMENTS` | `true` | relay: download inbound attachments into the inbox and give agy their local paths |
+| `AGY_DISCORD_REPLAY_MAX_AGE_MS` | `3600000` | relay: replay pending messages younger than this after a restart; `0` disables replay |
 | `AGY_DISCORD_ASSUME_YES` | `false` | suppress the unsafe-mode warning |
 
 ## Development
